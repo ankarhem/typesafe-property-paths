@@ -1,0 +1,8 @@
+{
+  "name": "typesafe-property-paths",
+  "private": true,
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^4.7.4"
+  }
+}
