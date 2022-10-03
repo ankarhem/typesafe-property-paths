@@ -1,8 +1,25 @@
 {
   "name": "typesafe-property-paths",
-  "version": "1.0.1",
+  "author": "Jakob Ankarhem <jakob@ankarhem.dev>",
+  "version": "1.0.2",
   "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc"
+  },
+  "types": "./dist/index.d.ts",
   "devDependencies": {
+    "@changesets/cli": "^2.25.0",
     "typescript": "^4.7.4"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ankarhem/typesafe-property-paths.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ankarhem/typesafe-property-paths/issues"
+  },
+  "homepage": "https://github.com/ankarhem/typesafe-property-paths"
 }
