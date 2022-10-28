@@ -1,5 +1,11 @@
 # typesafe-property-paths
 
+## 1.1.1
+
+### Patch Changes
+
+- add valueatpath type helper
+
 ## 1.1.0
 
 ### Minor Changes
