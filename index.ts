@@ -5,14 +5,14 @@ type ExpectFalse<T extends false> = T;
 // Test object
 interface Object {
   name: {
-    firstName: string;
+    firstName: "jakob";
     lastName: string;
   };
   favoriteColors: string[];
   children: {
     name: {
       firstName: string;
-      lastName: string;
+      lastName?: string;
     };
   }[];
 }
@@ -22,6 +22,9 @@ type cases_PropertyStringPath = [
   Expect<"name.firstName" extends PropertyStringPath<Object> ? true : false>,
   Expect<"children" extends PropertyStringPath<Object> ? true : false>,
   Expect<"children[0]" extends PropertyStringPath<Object> ? true : false>,
+  ExpectFalse<
+    "children[hej]" extends PropertyStringPath<Object> ? true : false
+  >,
   Expect<"children[0].name" extends PropertyStringPath<Object> ? true : false>,
   ExpectFalse<"nope" extends PropertyStringPath<Object> ? true : false>,
   ExpectFalse<
@@ -49,10 +52,10 @@ export type PropertyStringPath<T, Prefix = ""> = T extends object
         NonNullable<T[K]> extends Array<any>
         ?
             | `${string & Prefix}${string & K}`
-            | `${string & Prefix}${string & K}[${string}]`
+            | `${string & Prefix}${string & K}[${number}]`
             | PropertyStringPath<
                 NonNullable<ArrayType<T[K]>>,
-                `${string & Prefix}${string & K}[${string}].`
+                `${string & Prefix}${string & K}[${number}].`
               >
         : // Otherwise if the value is an object we add the types `prefix` + . + `key`
           // and recurse with the value as the object and set the prefix to `prefix` + . + `key` + .
@@ -63,6 +66,50 @@ export type PropertyStringPath<T, Prefix = ""> = T extends object
               >;
     }[keyof T] // Aggregate the type to a single type consisting of a union of all the value types
   : never; // This is a guard to prevent arrays from being passed to the function
+
+export type ValueAtPath<
+  T,
+  Path extends PropertyStringPath<T>
+> = Path extends keyof T
+  ? T[Path]
+  : Path extends `${infer K}.${infer Rest}`
+  ? K extends keyof T
+    ? Rest extends PropertyStringPath<T[K]>
+      ? ValueAtPath<T[K], Rest>
+      : never
+    : Path extends `${infer K}[${number}].${infer Rest}`
+    ? K extends keyof T
+      ? T[K] extends Array<infer U>
+        ? Rest extends PropertyStringPath<U>
+          ? ValueAtPath<U, Rest>
+          : never
+        : never
+      : never
+    : never
+  : Path extends `${infer K}[${number}]`
+  ? K extends keyof T
+    ? T[K] extends Array<infer U>
+      ? U
+      : never
+    : never
+  : never;
+
+type test = ValueAtPath<Object, "children[0].name.firstName">;
+
+type cases_ValueAtPath = [
+  Expect<"jakob" extends ValueAtPath<Object, "name.firstName"> ? true : false>,
+  Expect<string extends ValueAtPath<Object, "name.lastName"> ? true : false>,
+  Expect<
+    string extends ValueAtPath<Object, "children[0].name.firstName">
+      ? true
+      : false
+  >,
+  Expect<
+    string extends ValueAtPath<Object, "children[0].name.lastName">
+      ? true
+      : false
+  >
+];
 
 // Helper functions
 
