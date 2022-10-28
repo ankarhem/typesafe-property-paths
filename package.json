@@ -1,7 +1,7 @@
 {
   "name": "typesafe-property-paths",
   "author": "Jakob Ankarhem <jakob@ankarhem.dev>",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "license": "MIT",
   "files": [
     "dist"
@@ -9,6 +9,7 @@
   "scripts": {
     "build": "tsc"
   },
+  "main": "dist/index.js",
   "types": "./dist/index.d.ts",
   "devDependencies": {
     "@changesets/cli": "^2.25.0",

@@ -18,14 +18,14 @@ interface Object {
 }
 
 // Cases
-type cases = [
-  Expect<'name.firstName' extends PropertyStringPath<Object> ? true : false>,
-  Expect<'children' extends PropertyStringPath<Object> ? true : false>,
-  Expect<'children[0]' extends PropertyStringPath<Object> ? true : false>,
-  Expect<'children[0].name' extends PropertyStringPath<Object> ? true : false>,
-  ExpectFalse<'nope' extends PropertyStringPath<Object> ? true : false>,
+type cases_PropertyStringPath = [
+  Expect<"name.firstName" extends PropertyStringPath<Object> ? true : false>,
+  Expect<"children" extends PropertyStringPath<Object> ? true : false>,
+  Expect<"children[0]" extends PropertyStringPath<Object> ? true : false>,
+  Expect<"children[0].name" extends PropertyStringPath<Object> ? true : false>,
+  ExpectFalse<"nope" extends PropertyStringPath<Object> ? true : false>,
   ExpectFalse<
-    'children[0].nope' extends PropertyStringPath<Object> ? true : false
+    "children[0].nope" extends PropertyStringPath<Object> ? true : false
   >
 ];
 
@@ -33,7 +33,7 @@ type cases = [
 type Primitive = string | number | boolean | null | undefined;
 type ArrayType<T> = T extends Array<infer U> ? U : never;
 
-export type PropertyStringPath<T, Prefix = ''> = T extends object
+export type PropertyStringPath<T, Prefix = ""> = T extends object
   ? // If it's an object we want to add types
     {
       // Prefix is resulting string in the previous recursion
@@ -63,3 +63,38 @@ export type PropertyStringPath<T, Prefix = ''> = T extends object
               >;
     }[keyof T] // Aggregate the type to a single type consisting of a union of all the value types
   : never; // This is a guard to prevent arrays from being passed to the function
+
+// Helper functions
+
+// Test for concat
+const first = "hello";
+const second = "world";
+const example = concat(first, second);
+
+const example2 = concat("some", "string");
+
+type cases_concat = [
+  Expect<typeof example extends "helloworld" ? true : false>,
+  ExpectFalse<string extends typeof example ? true : false>,
+  Expect<typeof example2 extends "somestring" ? true : false>,
+  ExpectFalse<string extends typeof example2 ? true : false>
+];
+
+// implementation
+
+/**
+ * Normal string concatenation will result in a type of string
+ * This function will return the exact type of the string
+ *
+ * @example
+ * const first = 'hello';
+ * const second = 'world';
+ *
+ * const result = concat(first, second); // type = 'helloworld'
+ **/
+export function concat<T extends string, S extends string>(
+  a: T,
+  b: S
+): `${T}${S}` {
+  return `${a}${b}`;
+}
