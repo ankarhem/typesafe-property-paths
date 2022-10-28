@@ -67,17 +67,17 @@ export type PropertyStringPath<T, Prefix = ""> = T extends object
 // Helper functions
 
 // Test for concat
-const first = "hello";
-const second = "world";
-const example = concat(first, second);
+type first = "hello";
+type second = "world";
+type example = ReturnType<typeof concat<first, second>>;
 
-const example2 = concat("some", "string");
+type example2 = ReturnType<typeof concat<"some", "string">>;
 
 type cases_concat = [
-  Expect<typeof example extends "helloworld" ? true : false>,
-  ExpectFalse<string extends typeof example ? true : false>,
-  Expect<typeof example2 extends "somestring" ? true : false>,
-  ExpectFalse<string extends typeof example2 ? true : false>
+  Expect<example extends "helloworld" ? true : false>,
+  ExpectFalse<string extends example ? true : false>,
+  Expect<example2 extends "somestring" ? true : false>,
+  ExpectFalse<string extends example2 ? true : false>
 ];
 
 // implementation
