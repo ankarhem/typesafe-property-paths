@@ -16,3 +16,24 @@ const example = first + second; // type is string
 
 const example2 = concat(first, second); // type is 'helloworld'
 ```
+
+`ValueAtPath` Can extract the type at a given path
+
+```typescript
+interface Object {
+  name: {
+    firstName: "jakob";
+    lastName: string;
+  };
+  favoriteColors: string[];
+  children?: {
+    name: {
+      firstName: string;
+      lastName?: string;
+    };
+  }[];
+}
+
+type Name = ValueAtPath<Object, "children[0].name.firstName">;
+// type is string | undefined
+```
