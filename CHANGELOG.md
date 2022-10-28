@@ -1,5 +1,11 @@
 # typesafe-property-paths
 
+## 1.1.3
+
+### Patch Changes
+
+- forgot to build
+
 ## 1.1.2
 
 ### Patch Changes
