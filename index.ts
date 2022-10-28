@@ -9,7 +9,7 @@ interface Object {
     lastName: string;
   };
   favoriteColors: string[];
-  children: {
+  children?: {
     name: {
       firstName: string;
       lastName?: string;
@@ -83,6 +83,10 @@ export type ValueAtPath<
         ? Rest extends PropertyStringPath<U>
           ? ValueAtPath<U, Rest>
           : never
+        : T[K] extends Array<infer U> | undefined
+        ? Rest extends PropertyStringPath<NonNullable<U>> | undefined
+          ? ValueAtPath<NonNullable<U>, Rest> | undefined
+          : never
         : never
       : never
     : never
@@ -90,22 +94,27 @@ export type ValueAtPath<
   ? K extends keyof T
     ? T[K] extends Array<infer U>
       ? U
+      : T[K] extends Array<infer U> | undefined
+      ? U | undefined
       : never
     : never
   : never;
-
-type test = ValueAtPath<Object, "children[0].name.firstName">;
 
 type cases_ValueAtPath = [
   Expect<"jakob" extends ValueAtPath<Object, "name.firstName"> ? true : false>,
   Expect<string extends ValueAtPath<Object, "name.lastName"> ? true : false>,
   Expect<
-    string extends ValueAtPath<Object, "children[0].name.firstName">
+    string | undefined extends ValueAtPath<Object, "children[0].name.firstName">
       ? true
       : false
   >,
   Expect<
-    string extends ValueAtPath<Object, "children[0].name.lastName">
+    string | undefined extends ValueAtPath<Object, "children[0].name.lastName">
+      ? true
+      : false
+  >,
+  ExpectFalse<
+    string | undefined extends ValueAtPath<Object, "favoriteColors[0]">
       ? true
       : false
   >
