@@ -1,5 +1,11 @@
 # typesafe-property-paths
 
+## 1.1.4
+
+### Patch Changes
+
+- 1b9336a: add null support
+
 ## 1.1.3
 
 ### Patch Changes
