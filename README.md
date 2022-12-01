@@ -2,28 +2,28 @@
 
 Helpful for creating typesafe paths to properties in an object with semi-support for arrays.
 
-<img width="1235" alt="image" src="https://user-images.githubusercontent.com/14110063/182397130-516bb90c-8ea0-40af-831b-61300b22af71.png">
+```typescript
+interface Object {
+  firstName: 'jakob';
+  lastName: string;
+  children?: {
+    firstName: string;
+  }[];
+}
+
+type Paths = PropertyStringPath<Object>;
+// type is "firstName" | "lastName" | "children" | "children[${number}]" | "children[${number}].firstName"
+```
 
 ## Helper functions
-
-```typescript
-import { concat } from "typesafe-property-paths";
-
-const first = "hello"; // type is 'hello'
-const second = "world"; //type is 'world'
-
-const example = first + second; // type is string
-
-const example2 = concat(first, second); // type is 'helloworld'
-```
 
 `ValueAtPath` Can extract the type at a given path
 
 ```typescript
 interface Object {
   name: {
-    firstName: "jakob";
-    lastName: string;
+    firstName: 'jakob';
+    lastName: string | null;
   };
   favoriteColors: string[];
   children?: {
@@ -34,6 +34,20 @@ interface Object {
   }[];
 }
 
-type Name = ValueAtPath<Object, "children[0].name.firstName">;
+type LastName = ValueAtPath<Object, 'name.lastName'>;
+// type is string | null
+
+type ChildFirstName = ValueAtPath<Object, 'children[0].name.firstName'>;
 // type is string | undefined
+```
+
+```typescript
+import { concat } from 'typesafe-property-paths';
+
+const first = 'hello'; // type is 'hello'
+const second = 'world'; //type is 'world'
+
+const example = first + second; // type is string
+
+const example2 = concat(first, second); // type is 'helloworld'
 ```

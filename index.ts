@@ -1,42 +1,59 @@
 // Test helpers
 type Expect<T extends true> = T;
-type ExpectFalse<T extends false> = T;
+type Equal<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
+  ? 1
+  : 2
+  ? true
+  : false;
+type NotEqual<X, Y> = true extends Equal<X, Y> ? false : true;
+type ExpectExtends<VALUE, EXPECTED> = EXPECTED extends VALUE ? true : false;
 
-// Test object
+// Test objects
 interface Object {
-  name: {
-    firstName: "jakob";
+  firstName: 'jakob';
+  lastName: string;
+  nullish: string | null;
+}
+
+interface Nested {
+  name?: {
+    firstName: 'jakob';
     lastName: string;
   };
-  favoriteColors: string[];
-  children?: {
-    name: {
-      firstName: string;
-      lastName?: string;
-    };
+}
+
+interface WithArray {
+  children: {
+    name: string;
   }[];
 }
 
+interface HasNullishParent {
+  parent: {
+    name: string;
+  } | null;
+}
+
+type Test = PropertyStringPath<Object> extends 'Nope' ? true : false;
+
 // Cases
 type cases_PropertyStringPath = [
-  Expect<"name.firstName" extends PropertyStringPath<Object> ? true : false>,
-  Expect<"children" extends PropertyStringPath<Object> ? true : false>,
-  Expect<"children[0]" extends PropertyStringPath<Object> ? true : false>,
-  ExpectFalse<
-    "children[hej]" extends PropertyStringPath<Object> ? true : false
-  >,
-  Expect<"children[0].name" extends PropertyStringPath<Object> ? true : false>,
-  ExpectFalse<"nope" extends PropertyStringPath<Object> ? true : false>,
-  ExpectFalse<
-    "children[0].nope" extends PropertyStringPath<Object> ? true : false
-  >
+  Expect<Equal<PropertyStringPath<Object>, "firstName" | "lastName" | "nullish">>,
+  Expect<Equal<PropertyStringPath<Required<Nested>>, "name" | "name.firstName" | "name.lastName">>,
+  Expect<Equal<PropertyStringPath<Nested>, "name" | "name.firstName" | "name.lastName">>,
+  Expect<Equal<PropertyStringPath<WithArray>, "children" | `children[${number}]` | `children[${number}].name`>>,
+  Expect<Equal<PropertyStringPath<HasNullishParent>, "parent" | "parent.name">>,
+  // @ts-expect-error
+  Expect<ExpectExtends<PropertyStringPath<Object>, "nope">>,
+  // @ts-expect-error
+  Expect<ExpectExtends<PropertyStringPath<WithArray>, `children[${number}].nope`>>
 ];
 
 // Implementation
 type Primitive = string | number | boolean | null | undefined;
 type ArrayType<T> = T extends Array<infer U> ? U : never;
 
-export type PropertyStringPath<T, Prefix = ""> = T extends object
+export type PropertyStringPath<T, Prefix = ''> = T extends object
   ? // If it's an object we want to add types
     {
       // Prefix is resulting string in the previous recursion
@@ -67,73 +84,77 @@ export type PropertyStringPath<T, Prefix = ""> = T extends object
     }[keyof T] // Aggregate the type to a single type consisting of a union of all the value types
   : never; // This is a guard to prevent arrays from being passed to the function
 
+type cases_ValueAtPath = [
+  Expect<Equal<ValueAtPath<Object, 'firstName'>, 'jakob'>>,
+  Expect<Equal<ValueAtPath<Nested, 'name'>, Nested['name']>>,
+  Expect<Equal<ValueAtPath<Nested, 'name.firstName'>, 'jakob' | undefined>>,
+  Expect<Equal<ValueAtPath<WithArray, 'children'>, WithArray['children']>>,
+  Expect<Equal<ValueAtPath<Object, 'nullish'>, string | null>>,
+  Expect<Equal<ValueAtPath<HasNullishParent, 'parent'>, HasNullishParent['parent']>>,
+  Expect<Equal<ValueAtPath<HasNullishParent, 'parent.name'>, string | null>>,
+  // @ts-expect-error
+  ValueAtPath<Object, 'nope'>,
+  Expect<NotEqual<ValueAtPath<Object, 'firstName'>, string>>
+];
+
 export type ValueAtPath<
   T,
   Path extends PropertyStringPath<T>
 > = Path extends keyof T
-  ? T[Path]
-  : Path extends `${infer K}.${infer Rest}`
-  ? K extends keyof T
-    ? Rest extends PropertyStringPath<T[K]>
-      ? ValueAtPath<T[K], Rest>
+  ? // if path is immediate property of T
+    T[Path]
+  : // else we infer the rest of the path
+  Path extends `${infer K}.${infer Rest}`
+  ? // make sure K is a property of T
+    K extends keyof T
+    ? // and that the rest is a path in the value of K
+      Rest extends PropertyStringPath<NonNullable<T[K]>>
+      ? // infer possible nullish value
+        T[K] extends NonNullable<T[K]> | infer Nullish
+        ? // Recurse and add the nullish value to the result if it exists
+          | ValueAtPath<NonNullable<T[K]>, Rest>
+            | (Nullish extends undefined | null ? Nullish : never)
+        : never
       : never
-    : Path extends `${infer K}[${number}].${infer Rest}`
-    ? K extends keyof T
-      ? T[K] extends Array<infer U>
-        ? Rest extends PropertyStringPath<U>
-          ? ValueAtPath<U, Rest>
-          : never
-        : T[K] extends Array<infer U> | undefined
-        ? Rest extends PropertyStringPath<NonNullable<U>> | undefined
-          ? ValueAtPath<NonNullable<U>, Rest> | undefined
+    : // if path has an array infer the rest
+    Path extends `${infer K}[${number}].${infer Rest}`
+    ? // make sure initial part is a property of T
+      K extends keyof T
+      ? // and that the value of K is supposed to be an array
+        T[K] extends Array<infer U> | infer Nullish
+        ? // and that the rest is a path in the value of K
+          Rest extends PropertyStringPath<NonNullable<U>>
+          ? // recurse and add the nullish value to the result if it exists
+            | ValueAtPath<NonNullable<U>, Rest>
+              | (Nullish extends undefined | null ? Nullish : never)
           : never
         : never
       : never
     : never
-  : Path extends `${infer K}[${number}]`
-  ? K extends keyof T
-    ? T[K] extends Array<infer U>
-      ? U
-      : T[K] extends Array<infer U> | undefined
-      ? U | undefined
+  : // if the path is to an array item but not a nested object inside that array
+  Path extends `${infer K}[${number}]`
+  ? // make sure K is a property of T
+    K extends keyof T
+    ? // and that the value of K is supposed to be an array
+      T[K] extends Array<infer U> | infer Nullish
+      ? // Add the nullish value to the result if it exists
+        U | (Nullish extends undefined | null ? Nullish : never)
       : never
     : never
   : never;
 
-type cases_ValueAtPath = [
-  Expect<"jakob" extends ValueAtPath<Object, "name.firstName"> ? true : false>,
-  Expect<string extends ValueAtPath<Object, "name.lastName"> ? true : false>,
-  Expect<
-    string | undefined extends ValueAtPath<Object, "children[0].name.firstName">
-      ? true
-      : false
-  >,
-  Expect<
-    string | undefined extends ValueAtPath<Object, "children[0].name.lastName">
-      ? true
-      : false
-  >,
-  ExpectFalse<
-    string | undefined extends ValueAtPath<Object, "favoriteColors[0]">
-      ? true
-      : false
-  >
-];
-
-// Helper functions
-
 // Test for concat
-type first = "hello";
-type second = "world";
+type first = 'hello';
+type second = 'world';
 type example = ReturnType<typeof concat<first, second>>;
 
-type example2 = ReturnType<typeof concat<"some", "string">>;
+type example2 = ReturnType<typeof concat<'some', 'string'>>;
 
 type cases_concat = [
-  Expect<example extends "helloworld" ? true : false>,
-  ExpectFalse<string extends example ? true : false>,
-  Expect<example2 extends "somestring" ? true : false>,
-  ExpectFalse<string extends example2 ? true : false>
+  Expect<Equal<example, 'helloworld'>>,
+  Expect<Equal<example2, 'somestring'>>,
+  Expect<NotEqual<example, string>>,
+  Expect<NotEqual<example2, string>>
 ];
 
 // implementation
