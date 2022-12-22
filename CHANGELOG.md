@@ -1,5 +1,11 @@
 # typesafe-property-paths
 
+## 1.1.5
+
+### Patch Changes
+
+- add support for { [key: string]: <some type> } in ValueAtPath
+
 ## 1.1.4
 
 ### Patch Changes
