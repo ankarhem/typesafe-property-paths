@@ -34,7 +34,11 @@ interface HasNullishParent {
   } | null;
 }
 
-type Test = PropertyStringPath<Object> extends 'Nope' ? true : false;
+interface ObjectWithAnyKey {
+  [key: string]: {
+    id: string;
+  };
+}
 
 // Cases
 type cases_PropertyStringPath = [
@@ -43,6 +47,7 @@ type cases_PropertyStringPath = [
   Expect<Equal<PropertyStringPath<Nested>, "name" | "name.firstName" | "name.lastName">>,
   Expect<Equal<PropertyStringPath<WithArray>, "children" | `children[${number}]` | `children[${number}].name`>>,
   Expect<Equal<PropertyStringPath<HasNullishParent>, "parent" | "parent.name">>,
+  Expect<Equal<PropertyStringPath<ObjectWithAnyKey>, `${string}` | `${string}.id`>>,
   // @ts-expect-error
   Expect<ExpectExtends<PropertyStringPath<Object>, "nope">>,
   // @ts-expect-error
@@ -92,15 +97,24 @@ type cases_ValueAtPath = [
   Expect<Equal<ValueAtPath<Object, 'nullish'>, string | null>>,
   Expect<Equal<ValueAtPath<HasNullishParent, 'parent'>, HasNullishParent['parent']>>,
   Expect<Equal<ValueAtPath<HasNullishParent, 'parent.name'>, string | null>>,
+  Expect<Equal<ValueAtPath<ObjectWithAnyKey, 'anyKey.id'>, string | undefined>>,
   // @ts-expect-error
   ValueAtPath<Object, 'nope'>,
-  Expect<NotEqual<ValueAtPath<Object, 'firstName'>, string>>
+  Expect<NotEqual<ValueAtPath<Object, 'firstName'>, string>>,
+  // @ts-expect-error
+  ValueAtPath<Nested, 'name?.firstName'>,
 ];
 
 export type ValueAtPath<
   T,
   Path extends PropertyStringPath<T>
-> = Path extends keyof T
+> = string extends keyof T
+    ? Path extends `${string}.${infer Rest}` // | `${string}?.${infer Rest}`
+      ? Rest extends PropertyStringPath<NonNullable<T[string]>>
+        ? ValueAtPath<NonNullable<T[string]>, Rest> | undefined
+        : never
+      : never
+  : Path extends keyof T
   ? // if path is immediate property of T
     T[Path]
   : // else we infer the rest of the path
